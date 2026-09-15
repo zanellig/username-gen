@@ -3,7 +3,19 @@
   "name": "Username Roller",
   "version": "1.0.0",
   "description": "Generate random usernames for site registrations.",
-  "permissions": ["clipboardWrite"],
+  "permissions": ["clipboardWrite", "contextMenus", "scripting"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [{
+    "matches": ["http://*/*", "https://*/*"],
+    "js": ["page-fields.js"],
+    "all_frames": true,
+    "match_about_blank": true,
+    "run_at": "document_start"
+  }],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Roll a username"

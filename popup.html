@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <style>
       body {
-        width: 240px;
+        width: 290px;
         margin: 0;
         padding: 12px;
         font: 13px system-ui, sans-serif;
@@ -14,20 +14,14 @@
         margin: 0 0 10px;
         padding: 0;
       }
-      li {
-        padding: 7px 8px;
-        border-radius: 6px;
-        cursor: pointer;
+      .username {
+        text-align: left;
+        border: 0;
         font-family: ui-monospace, monospace;
       }
-      li:hover,
-      li:focus {
+      button:hover,
+      button:focus-visible {
         background: #eef1f5;
-        outline: none;
-      }
-      li[data-copied]::after {
-        content: " copied";
-        color: #2c7;
       }
       button {
         width: 100%;
@@ -38,13 +32,15 @@
         cursor: pointer;
         font: inherit;
       }
+      select { width: 100%; margin: 6px 0 10px; padding: 5px; }
+      #status { margin: 10px 0 0; line-height: 1.4; }
       @media (prefers-color-scheme: dark) {
         body {
           background: #1e1f22;
           color: #eee;
         }
-        li:hover,
-        li:focus {
+        button:hover,
+        button:focus-visible {
           background: #303237;
         }
         button {
@@ -56,8 +52,11 @@
     </style>
   </head>
   <body>
+    <label for="destination">Use username in</label>
+    <select id="destination" disabled><option value="">Copy to clipboard</option></select>
     <ul id="list" aria-label="Generated usernames"></ul>
     <button id="reroll">Reroll</button>
+    <p id="status" role="status">Looking for username fields…</p>
     <script type="module" src="popup.js"></script>
   </body>
 </html>
