@@ -3,59 +3,151 @@
   <head>
     <meta charset="utf-8" />
     <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #16181d;
+        --muted: #6b7280;
+        --line: #e3e5ea;
+        --sunk: #f4f5f7;
+        --accent: #5b5bd6;
+        --accent-fg: #ffffff;
+        --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1e1f22;
+          --fg: #edeef1;
+          --muted: #9aa0ab;
+          --line: #33353b;
+          --sunk: #26282c;
+          --accent: #8b8bf5;
+          --accent-fg: #14141c;
+        }
+      }
+      * { box-sizing: border-box; }
       body {
-        width: 290px;
+        width: 300px;
         margin: 0;
-        padding: 12px;
+        padding: 14px;
+        text-align: center;
+        background: var(--bg);
+        color: var(--fg);
         font: 13px system-ui, sans-serif;
       }
-      ul {
+      button { font: inherit; color: inherit; cursor: pointer; }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+      /* destination: a text control that opens a popover of radio choices */
+      #destination {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border: 0;
+        background: none;
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 4px 6px;
+        border-radius: 6px;
+      }
+      #destination:hover:not(:disabled) { background: var(--sunk); color: var(--fg); }
+      #destination:disabled { cursor: default; opacity: 0.6; }
+      #destination b { font-weight: 600; color: var(--fg); }
+
+      #destmenu {
+        position: fixed;
+        inset: 40px 12px auto 12px;
+        width: auto;
+        margin: 0;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--bg);
+        color: var(--fg);
+        box-shadow: 0 8px 22px rgb(0 0 0 / 0.22);
+      }
+      #destmenu fieldset { border: 0; margin: 0; padding: 0; }
+      #destmenu legend {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+      }
+      #destmenu label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 9px;
+        border-radius: 6px;
+        text-align: left;
+        cursor: pointer;
+      }
+      #destmenu label:hover { background: var(--sunk); }
+      #destmenu label:has(:checked) { color: var(--accent); font-weight: 600; }
+      #destmenu input { accent-color: var(--accent); margin: 0; flex: 0 0 auto; }
+
+      /* one candidate up front, the rest as alternates */
+      #hero {
+        width: 100%;
+        border: 0;
+        background: none;
+        font-family: var(--mono);
+        font-size: 21px;
+        letter-spacing: -0.01em;
+        padding: 12px 4px 14px;
+        border-radius: 8px;
+      }
+      #hero:hover { background: var(--sunk); }
+      #reroll {
+        width: 100%;
+        border: 0;
+        border-radius: 9px;
+        background: var(--accent);
+        color: var(--accent-fg);
+        font-weight: 600;
+        padding: 10px;
+      }
+      #reroll:hover { filter: brightness(1.07); }
+      #alts {
         list-style: none;
-        margin: 0 0 10px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
+        margin: 12px 0 0;
         padding: 0;
       }
-      .username {
-        text-align: left;
-        border: 0;
-        font-family: ui-monospace, monospace;
+      #alts button {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        border: 1px solid var(--line);
+        background: none;
+        border-radius: 999px;
+        padding: 4px 9px;
+        color: var(--muted);
       }
-      button:hover,
-      button:focus-visible {
-        background: #eef1f5;
-      }
-      button {
-        width: 100%;
-        padding: 7px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        background: #fff;
-        cursor: pointer;
-        font: inherit;
-      }
-      select { width: 100%; margin: 6px 0 10px; padding: 5px; }
-      #status { margin: 10px 0 0; line-height: 1.4; }
-      @media (prefers-color-scheme: dark) {
-        body {
-          background: #1e1f22;
-          color: #eee;
-        }
-        button:hover,
-        button:focus-visible {
-          background: #303237;
-        }
-        button {
-          background: #26282c;
-          color: #eee;
-          border-color: #444;
-        }
-      }
+      #alts button:hover { color: var(--fg); border-color: var(--accent); }
+      #status { margin: 12px 0 0; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
     </style>
   </head>
   <body>
-    <label for="destination">Use username in</label>
-    <select id="destination" disabled><option value="">Copy to clipboard</option></select>
-    <ul id="list" aria-label="Generated usernames"></ul>
-    <button id="reroll">Reroll</button>
+    <button id="destination" popovertarget="destmenu" disabled>
+      sending to <b id="destlabel">clipboard</b><span aria-hidden="true">▾</span>
+    </button>
+    <div id="destmenu" popover>
+      <fieldset>
+        <legend>Use username in</legend>
+        <div id="destoptions"></div>
+      </fieldset>
+    </div>
+    <div id="names">
+      <button class="username" id="hero"></button>
+      <button id="reroll">Roll again</button>
+      <ul id="alts" aria-label="Other usernames"></ul>
+    </div>
     <p id="status" role="status">Looking for username fields…</p>
     <script type="module" src="popup.js"></script>
   </body>
