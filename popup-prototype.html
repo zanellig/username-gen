@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<!--
+  PROTOTYPE — throwaway. Not shipped, not linked from manifest.json.
+  Four restyles of popup.html, switchable via ?variant=A|B|C|D.
+  Chrome APIs are stubbed; generator.js is the real one.
+  Run: python3 -m http.server 8391   (from username-gen/)
+       http://localhost:8391/popup-prototype.html
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Username Roller — popup variants</title>
+    <style>
+      /* ---------- harness (not part of any design) ---------- */
+      :root { color-scheme: light dark; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        gap: 14px;
+        grid-auto-rows: min-content;
+        padding: 56px 0 96px;
+        background: #e9eaee;
+        font: 13px system-ui, sans-serif;
+      }
+      body[data-theme="dark"] { background: #141518; }
+      #stage { display: grid; place-items: center; }
+      .popup {
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
+        overflow: hidden;
+      }
+      #state {
+        font: 11px ui-monospace, monospace;
+        color: #6b7280;
+        letter-spacing: 0.02em;
+      }
+      body[data-theme="dark"] #state { color: #8b8f9a; }
+      #bar {
+        position: fixed;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 8px;
+        border-radius: 999px;
+        background: #101114;
+        color: #fff;
+        box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+        font: 12px system-ui, sans-serif;
+        z-index: 10;
+      }
+      #bar button,
+      #bar select {
+        font: inherit;
+        color: inherit;
+        background: #26282e;
+        border: 0;
+        border-radius: 999px;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+      #bar #label { padding: 0 8px; min-width: 168px; text-align: center; }
+      #bar .sep { width: 1px; height: 18px; background: #3a3d45; margin: 0 2px; }
+
+      /* ---------- shared tokens for every variant ---------- */
+      .popup {
+        --bg: #ffffff;
+        --fg: #16181d;
+        --muted: #6b7280;
+        --line: #e3e5ea;
+        --sunk: #f4f5f7;
+        --accent: #5b5bd6;
+        --accent-fg: #ffffff;
+        --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: var(--bg);
+        color: var(--fg);
+        font: 13px system-ui, sans-serif;
+      }
+      body[data-theme="dark"] .popup {
+        --bg: #1e1f22;
+        --fg: #edeef1;
+        --muted: #9aa0ab;
+        --line: #33353b;
+        --sunk: #26282c;
+        --accent: #8b8bf5;
+        --accent-fg: #14141c;
+      }
+      .popup *,
+      .popup *::before,
+      .popup *::after { box-sizing: border-box; }
+      .popup button { font: inherit; color: inherit; cursor: pointer; }
+      .name { font-family: var(--mono); }
+
+      /* =========== A — segmented destination, dense list =========== */
+      [data-variant="A"] { width: 290px; padding: 10px; }
+      [data-variant="A"] .segs {
+        display: flex;
+        gap: 3px;
+        padding: 3px;
+        background: var(--sunk);
+        border-radius: 8px;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      [data-variant="A"] .segs::-webkit-scrollbar { display: none; }
+      [data-variant="A"] .seg {
+        flex: 0 0 auto;
+        border: 0;
+        background: transparent;
+        border-radius: 6px;
+        padding: 5px 9px;
+        white-space: nowrap;
+        color: var(--muted);
+      }
+      [data-variant="A"] .seg[aria-pressed="true"] {
+        background: var(--bg);
+        color: var(--fg);
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+        font-weight: 600;
+      }
+      [data-variant="A"] .seg .tag {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        opacity: 0.65;
+        margin-right: 4px;
+      }
+      [data-variant="A"] ul { list-style: none; margin: 8px 0 0; padding: 0; }
+      [data-variant="A"] li + li { border-top: 1px solid var(--line); }
+      [data-variant="A"] .name {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 0;
+        background: none;
+        text-align: left;
+        padding: 8px 8px;
+        border-radius: 6px;
+      }
+      [data-variant="A"] .name .go { color: var(--muted); opacity: 0; }
+      [data-variant="A"] .name:hover,
+      [data-variant="A"] .name:focus-visible { background: var(--sunk); outline: none; }
+      [data-variant="A"] .name:hover .go,
+      [data-variant="A"] .name:focus-visible .go { opacity: 1; }
+      [data-variant="A"] .foot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--line);
+      }
+      [data-variant="A"] .foot p { margin: 0; color: var(--muted); line-height: 1.35; }
+      [data-variant="A"] .reroll {
+        flex: 0 0 auto;
+        border: 1px solid var(--line);
+        background: none;
+        border-radius: 6px;
+        padding: 5px 10px;
+      }
+
+      /* =========== B — names first, destination in a footer popover =========== */
+      [data-variant="B"] { width: 290px; position: relative; }
+      [data-variant="B"] ul { list-style: none; margin: 0; padding: 6px; }
+      [data-variant="B"] .name {
+        width: 100%;
+        border: 0;
+        background: none;
+        text-align: left;
+        font-size: 14px;
+        padding: 11px 12px 11px 14px;
+        border-radius: 8px;
+        border-left: 3px solid transparent;
+      }
+      [data-variant="B"] .name:hover,
+      [data-variant="B"] .name:focus-visible {
+        background: var(--sunk);
+        border-left-color: var(--accent);
+        outline: none;
+      }
+      [data-variant="B"] .dock {
+        display: flex;
+        gap: 6px;
+        padding: 8px;
+        border-top: 1px solid var(--line);
+        background: var(--sunk);
+      }
+      [data-variant="B"] .dock button {
+        border: 1px solid var(--line);
+        background: var(--bg);
+        border-radius: 8px;
+        padding: 7px 10px;
+      }
+      [data-variant="B"] .dest {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        min-width: 0;
+      }
+      [data-variant="B"] .dest span:first-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      [data-variant="B"] .menu {
+        position: absolute;
+        left: 8px;
+        right: 58px;
+        bottom: 52px;
+        display: none;
+        flex-direction: column;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--bg);
+        box-shadow: 0 8px 22px rgb(0 0 0 / 0.22);
+      }
+      [data-variant="B"] .menu.open { display: flex; }
+      [data-variant="B"] .menu button {
+        border: 0;
+        background: none;
+        text-align: left;
+        padding: 7px 9px;
+        border-radius: 6px;
+      }
+      [data-variant="B"] .menu button:hover { background: var(--sunk); }
+      [data-variant="B"] .menu button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+      [data-variant="B"] .status {
+        margin: 0;
+        padding: 7px 12px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+        border-top: 1px solid var(--line);
+      }
+
+      /* =========== C — one hero name, alternates as chips =========== */
+      [data-variant="C"] { width: 300px; padding: 14px; text-align: center; }
+      [data-variant="C"] .to {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border: 0;
+        background: none;
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 4px 6px;
+        border-radius: 6px;
+      }
+      [data-variant="C"] .to:hover { background: var(--sunk); color: var(--fg); }
+      [data-variant="C"] .to b { font-weight: 600; color: var(--fg); }
+      [data-variant="C"] .hero {
+        width: 100%;
+        border: 0;
+        background: none;
+        font-size: 21px;
+        letter-spacing: -0.01em;
+        padding: 12px 4px 14px;
+        border-radius: 8px;
+      }
+      [data-variant="C"] .hero:hover { background: var(--sunk); }
+      [data-variant="C"] .roll {
+        width: 100%;
+        border: 0;
+        border-radius: 9px;
+        background: var(--accent);
+        color: var(--accent-fg);
+        font-weight: 600;
+        padding: 10px;
+      }
+      [data-variant="C"] .alts {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
+        margin-top: 12px;
+      }
+      [data-variant="C"] .alts button {
+        border: 1px solid var(--line);
+        background: none;
+        border-radius: 999px;
+        padding: 4px 9px;
+        font-size: 11.5px;
+        color: var(--muted);
+      }
+      [data-variant="C"] .alts button:hover { color: var(--fg); border-color: var(--accent); }
+      [data-variant="C"] .menu {
+        display: none;
+        flex-direction: column;
+        margin: 6px 0 0;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        text-align: left;
+      }
+      [data-variant="C"] .menu.open { display: flex; }
+      [data-variant="C"] .menu button {
+        border: 0;
+        background: none;
+        text-align: left;
+        padding: 6px 8px;
+        border-radius: 6px;
+      }
+      [data-variant="C"] .menu button:hover { background: var(--sunk); }
+      [data-variant="C"] .menu button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+      [data-variant="C"] .status {
+        margin: 12px 0 0;
+        color: var(--muted);
+        font-size: 11.5px;
+        line-height: 1.35;
+      }
+
+      /* =========== D — split: destination rail + names =========== */
+      [data-variant="D"] { width: 380px; display: grid; grid-template-columns: 136px 1fr; }
+      [data-variant="D"] .rail {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 8px;
+        background: var(--sunk);
+        border-right: 1px solid var(--line);
+      }
+      [data-variant="D"] .rail h2 {
+        margin: 2px 6px 6px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      [data-variant="D"] .rail button {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        border: 0;
+        background: none;
+        text-align: left;
+        padding: 7px 8px;
+        border-radius: 7px;
+      }
+      [data-variant="D"] .rail button:hover { background: var(--bg); }
+      [data-variant="D"] .rail button[aria-pressed="true"] {
+        background: var(--accent);
+        color: var(--accent-fg);
+      }
+      [data-variant="D"] .rail small { font-size: 10px; opacity: 0.7; }
+      [data-variant="D"] .pane { display: flex; flex-direction: column; padding: 8px; }
+      [data-variant="D"] ul { list-style: none; margin: 0; padding: 0; flex: 1; }
+      [data-variant="D"] .name {
+        width: 100%;
+        border: 0;
+        background: none;
+        text-align: left;
+        padding: 8px 10px;
+        border-radius: 7px;
+      }
+      [data-variant="D"] .name:hover,
+      [data-variant="D"] .name:focus-visible { background: var(--sunk); outline: none; }
+      [data-variant="D"] .pane .reroll {
+        border: 1px dashed var(--line);
+        background: none;
+        border-radius: 7px;
+        padding: 7px;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+      [data-variant="D"] .pane .reroll:hover { color: var(--fg); border-style: solid; }
+      [data-variant="D"] .status {
+        grid-column: 1 / -1;
+        margin: 0;
+        padding: 8px 12px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div id="state"></div>
+    <div id="bar">
+      <button id="prev" aria-label="Previous variant">←</button>
+      <span id="label"></span>
+      <button id="next" aria-label="Next variant">→</button>
+      <span class="sep"></span>
+      <select id="scenario">
+        <option value="none">0 fields</option>
+        <option value="one" selected>1 field</option>
+        <option value="multi">3 fields</option>
+      </select>
+      <button id="theme">☾ dark</button>
+    </div>
+
+    <script type="module">
+      import { randomUsername } from "./generator.js";
+
+      // ---- stubbed page state (the real popup gets this from browser-fields.js)
+      const SCENARIOS = {
+        none: [],
+        one: [{ label: "Email", hasValue: false }],
+        multi: [
+          { label: "Email", hasValue: false },
+          { label: "Username", hasValue: true },
+          { label: "Display name", hasValue: false },
+        ],
+      };
+
+      const q = new URLSearchParams(location.search);
+      const s = {
+        variant: q.get("variant") || "A",
+        scenario: SCENARIOS[q.get("scenario")] ? q.get("scenario") : "one",
+        theme: q.get("theme") === "dark" ? "dark" : "light",
+        fields: [],
+        dest: "", // "" = clipboard, else field index as string
+        names: [],
+        status: "",
+        menu: false,
+      };
+
+      const verb = (f) => (f.hasValue ? "Replace" : "Fill");
+      const destName = () =>
+        s.dest === "" ? "Copy to clipboard" : s.fields[+s.dest].label;
+      const destOptions = () => [
+        { value: "", label: "Copy to clipboard", tag: "Copy" },
+        ...s.fields.map((f, i) => ({
+          value: String(i),
+          label: f.label,
+          tag: verb(f),
+        })),
+      ];
+
+      function loadScenario(key) {
+        s.scenario = key;
+        s.fields = structuredClone(SCENARIOS[key]);
+        s.dest = s.fields.length === 1 ? "0" : "";
+        s.menu = false;
+        s.status =
+          s.fields.length === 0
+            ? "No matching username field. Copy a name, or right-click the field and choose Generate username here."
+            : s.fields.length === 1
+              ? "Select a name to fill the chosen field."
+              : "Several username fields found. Choose a destination, then select a name.";
+      }
+
+      const reroll = () => {
+        s.names = Array.from({ length: 5 }, randomUsername);
+      };
+
+      function use(name) {
+        if (s.dest === "") {
+          s.status = "Username copied.";
+        } else {
+          s.fields[+s.dest].hasValue = true;
+          s.status = `Filled ${s.fields[+s.dest].label} with ${name}.`;
+        }
+      }
+
+      // ---- variants
+      const esc = (v) => String(v).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+      const rows = (cls) =>
+        s.names
+          .map((n) => `<li><button class="name ${cls}" data-name="${esc(n)}">${esc(n)}</button></li>`)
+          .join("");
+
+      const VARIANTS = {
+        A: {
+          name: "Segmented + dense list",
+          html: () => `
+            <div class="segs">
+              ${destOptions()
+                .map(
+                  (o) => `<button class="seg" data-dest="${o.value}" aria-pressed="${o.value === s.dest}">
+                    <span class="tag">${o.tag}</span>${esc(o.label)}</button>`,
+                )
+                .join("")}
+            </div>
+            <ul>${s.names
+              .map(
+                (n) => `<li><button class="name" data-name="${esc(n)}">
+                  <span>${esc(n)}</span><span class="go">${s.dest === "" ? "⧉" : "↵"}</span></button></li>`,
+              )
+              .join("")}</ul>
+            <div class="foot">
+              <p>${esc(s.status)}</p>
+              <button class="reroll" data-reroll>⟳ Reroll</button>
+            </div>`,
+        },
+
+        B: {
+          name: "Names first, footer popover",
+          html: () => `
+            <ul>${rows("")}</ul>
+            <div class="menu ${s.menu ? "open" : ""}">
+              ${destOptions()
+                .map(
+                  (o) => `<button data-dest="${o.value}" aria-current="${o.value === s.dest}">
+                    ${o.value === "" ? "" : o.tag + ": "}${esc(o.label)}</button>`,
+                )
+                .join("")}
+            </div>
+            <div class="dock">
+              <button class="dest" data-menu>
+                <span>→ ${esc(destName())}</span><span>▾</span>
+              </button>
+              <button data-reroll aria-label="Reroll">⟳</button>
+            </div>
+            <p class="status">${esc(s.status)}</p>`,
+        },
+
+        C: {
+          name: "Hero name + chips",
+          html: () => `
+            <button class="to" data-menu>sending to <b>${esc(destName())}</b> ▾</button>
+            <div class="menu ${s.menu ? "open" : ""}">
+              ${destOptions()
+                .map(
+                  (o) => `<button data-dest="${o.value}" aria-current="${o.value === s.dest}">
+                    ${o.value === "" ? "" : o.tag + ": "}${esc(o.label)}</button>`,
+                )
+                .join("")}
+            </div>
+            <button class="hero name" data-name="${esc(s.names[0])}">${esc(s.names[0])}</button>
+            <button class="roll" data-reroll>Roll again</button>
+            <div class="alts">
+              ${s.names
+                .slice(1)
+                .map((n) => `<button class="name" data-name="${esc(n)}">${esc(n)}</button>`)
+                .join("")}
+            </div>
+            <p class="status">${esc(s.status)}</p>`,
+        },
+
+        D: {
+          name: "Split rail (380px)",
+          html: () => `
+            <div class="rail">
+              <h2>Destination</h2>
+              ${destOptions()
+                .map(
+                  (o) => `<button data-dest="${o.value}" aria-pressed="${o.value === s.dest}">
+                    ${esc(o.label)}<small>${o.tag}</small></button>`,
+                )
+                .join("")}
+            </div>
+            <div class="pane">
+              <ul>${rows("")}</ul>
+              <button class="reroll" data-reroll>⟳ Reroll</button>
+            </div>
+            <p class="status">${esc(s.status)}</p>`,
+        },
+      };
+
+      const KEYS = Object.keys(VARIANTS);
+
+      // ---- render
+      const stage = document.getElementById("stage");
+      function render() {
+        if (!VARIANTS[s.variant]) s.variant = "A";
+        stage.innerHTML = `<div class="popup" data-variant="${s.variant}">${VARIANTS[s.variant].html()}</div>`;
+        document.getElementById("label").textContent = `${s.variant} — ${VARIANTS[s.variant].name}`;
+        document.body.dataset.theme = s.theme;
+        document.getElementById("theme").textContent = s.theme === "dark" ? "☀ light" : "☾ dark";
+        document.getElementById("state").textContent =
+          `variant=${s.variant}  scenario=${s.scenario}  dest=${s.dest === "" ? "clipboard" : `field[${s.dest}] ${destName()}`}  filled=[${s.fields.filter((f) => f.hasValue).map((f) => f.label).join(", ")}]`;
+      }
+
+      stage.addEventListener("click", (e) => {
+        const el = e.target.closest("[data-dest],[data-name],[data-reroll],[data-menu]");
+        if (!el) return;
+        if (el.dataset.menu !== undefined) s.menu = !s.menu;
+        else if (el.dataset.dest !== undefined) {
+          s.dest = el.dataset.dest;
+          s.menu = false;
+        } else if (el.dataset.reroll !== undefined) reroll();
+        else use(el.dataset.name);
+        render();
+      });
+
+      const go = (step) => {
+        s.variant = KEYS[(KEYS.indexOf(s.variant) + step + KEYS.length) % KEYS.length];
+        s.menu = false;
+        const url = new URL(location.href);
+        url.searchParams.set("variant", s.variant);
+        history.replaceState(null, "", url);
+        render();
+      };
+      document.getElementById("prev").onclick = () => go(-1);
+      document.getElementById("next").onclick = () => go(1);
+      document.getElementById("theme").onclick = () => {
+        s.theme = s.theme === "dark" ? "light" : "dark";
+        render();
+      };
+      document.getElementById("scenario").onchange = (e) => {
+        loadScenario(e.target.value);
+        render();
+      };
+      addEventListener("keydown", (e) => {
+        if (e.target.matches("input, textarea, select, [contenteditable]")) return;
+        if (e.key === "ArrowLeft") go(-1);
+        if (e.key === "ArrowRight") go(1);
+      });
+
+      loadScenario(s.scenario);
+      document.getElementById("scenario").value = s.scenario;
+      reroll();
+      render();
+    </script>
+  </body>
+</html>
