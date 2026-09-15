@@ -11,8 +11,10 @@ and select this folder. Reload the extension and refresh open pages after update
 ## Use
 
 Click an empty username field to open the generator, or open it from the toolbar.
-Select a username to fill the chosen field or copy it. You can also right-click
-an input and choose **Generate username here**.
+The popup suggests one username with four alternates below it; choose one, or
+**Roll again** for a fresh set. The **sending to** menu at the top picks which
+field receives it, or copies it to the clipboard instead. You can also
+right-click an input and choose **Generate username here**.
 
 ## Development
 

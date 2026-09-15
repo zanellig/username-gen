@@ -99,7 +99,7 @@ try {
 			return (
 				popup &&
 				popup.document.querySelector("#destination")?.disabled === false &&
-				popup.document.querySelector("#list")?.inert === false
+				popup.document.querySelector("#names")?.inert === false
 			);
 		});
 	}
@@ -309,7 +309,7 @@ try {
 			() =>
 				chrome.extension
 					.getViews({ type: "popup" })[0]
-					.document.querySelector("#destination").value,
+					.document.querySelector("input[name=destination]:checked").value,
 		);
 		assert.equal(selected, "1");
 		const name = await harness.evaluate(() => {
@@ -390,8 +390,7 @@ try {
 				() =>
 					chrome.extension
 						.getViews({ type: "popup" })[0]
-						.document.querySelector("#destination").selectedOptions[0]
-						.textContent,
+						.document.querySelector("#destlabel").textContent,
 			),
 			/Username/,
 		);
@@ -407,8 +406,7 @@ try {
 				() =>
 					chrome.extension
 						.getViews({ type: "popup" })[0]
-						.document.querySelector("#destination").selectedOptions[0]
-						.textContent,
+						.document.querySelector("#destlabel").textContent,
 			),
 			/Handle/,
 		);
@@ -453,7 +451,10 @@ try {
 		);
 		const popup = await opened;
 		await popup.waitForSelector("#destination:not([disabled])");
-		assert.equal(await popup.locator("#destination").inputValue(), "1");
+		assert.equal(
+			await popup.locator("input[name=destination]:checked").inputValue(),
+			"1",
+		);
 		const name = await popup.locator("button.username").first().textContent();
 		await popup.locator("button.username").first().focus();
 		await popup.keyboard.press("Enter");
@@ -463,6 +464,44 @@ try {
 			.waitFor();
 		assert.equal(await page.locator("#second").inputValue(), name);
 		assert.equal(await page.locator("#first").inputValue(), "");
+		await popup.close();
+	});
+	await test("the destination menu retargets the fill and closes on choice", async () => {
+		await fixture(
+			'<form><h2>Register</h2><label>Username<input id="first"></label><label>Handle<input id="second"></label></form>',
+		);
+		await page.locator("#second").focus();
+		const opened = context.waitForEvent("page", { timeout: 10000 });
+		await worker.evaluate(() =>
+			chrome.tabs.create({
+				url: chrome.runtime.getURL("popup.html"),
+				active: false,
+			}),
+		);
+		const popup = await opened;
+		await popup.waitForSelector("#destination:not([disabled])");
+		await popup.locator("#destination").click();
+		assert.deepEqual(await popup.locator("#destoptions label").allTextContents(), [
+			"Copy to clipboard",
+			"Fill: Username (1)",
+			"Fill: Handle (2)",
+		]);
+		await popup.getByRole("radio", { name: "Fill: Username (1)" }).check();
+		await popup.waitForFunction(
+			() => !document.querySelector("#destmenu").matches(":popover-open"),
+		);
+		assert.equal(
+			await popup.locator("#destlabel").textContent(),
+			"Username (1)",
+		);
+		const name = await popup.locator("#hero").textContent();
+		await popup.locator("#hero").click();
+		await popup
+			.getByRole("status")
+			.filter({ hasText: "Username filled." })
+			.waitFor();
+		assert.equal(await page.locator("#first").inputValue(), name);
+		assert.equal(await page.locator("#second").inputValue(), "");
 		await popup.close();
 	});
 	await test("restricted pages fail cleanly", async () => {
