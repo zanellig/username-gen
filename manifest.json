@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Username Roller",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "description": "Generate random usernames for site registrations.",
   "permissions": ["clipboardWrite", "contextMenus", "scripting"],
   "host_permissions": ["http://*/*", "https://*/*"],
