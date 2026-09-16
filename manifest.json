@@ -3,6 +3,11 @@
   "name": "Username Roller",
   "version": "1.3.0",
   "description": "Generate random usernames for site registrations.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "permissions": ["clipboardWrite", "contextMenus", "scripting"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "background": {
@@ -18,6 +23,11 @@
   }],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Roll a username"
+    "default_title": "Roll a username",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
   }
 }

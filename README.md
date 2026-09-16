@@ -29,6 +29,16 @@ pnpm test
 `pnpm test:unit` and `pnpm test:browser` run the suites separately.
 There is no build step.
 
+The icons in `icons/` are committed PNGs. Regenerate them after editing a
+source SVG (`icon.svg` covers 48 and 128; `icon-16.svg` is hinted separately
+for 16):
+
+```sh
+rsvg-convert -w 16 -h 16 icons/icon-16.svg -o icons/icon-16.png
+rsvg-convert -w 48 -h 48 icons/icon.svg -o icons/icon-48.png
+rsvg-convert -w 128 -h 128 icons/icon.svg -o icons/icon-128.png
+```
+
 ## Releases
 
 The [GitHub Releases](https://github.com/zanellig/username-gen/releases) page

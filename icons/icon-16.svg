@@ -1,0 +1,10 @@
+<!-- Source for the 16 PNG only. Square pips on whole-pixel boundaries: round
+     ones straddle the grid at this size and rasterize to grey smudges. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <rect width="16" height="16" rx="3.5" fill="#5b5bd6"/>
+  <g fill="#ffffff">
+    <rect x="3" y="11" width="2" height="2" rx="0.5"/>
+    <rect x="7" y="7" width="2" height="2" rx="0.5"/>
+    <rect x="11" y="3" width="2" height="2" rx="0.5"/>
+  </g>
+</svg>
