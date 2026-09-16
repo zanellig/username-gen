@@ -1,0 +1,10 @@
+<!-- C — Tilted die outline, no tile. Tests whether rotation survives 16px. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <g transform="rotate(-12 8 8)">
+    <rect x="2.5" y="2.5" width="11" height="11" rx="2.5" fill="none" stroke="#5b5bd6" stroke-width="1.75"/>
+    <g fill="#5b5bd6">
+      <circle cx="5.75" cy="10.25" r="1.25"/>
+      <circle cx="10.25" cy="5.75" r="1.25"/>
+    </g>
+  </g>
+</svg>
